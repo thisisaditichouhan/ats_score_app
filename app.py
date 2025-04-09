@@ -2,16 +2,22 @@ import streamlit as st
 import docx2txt
 import fitz  # PyMuPDF
 import spacy
+import importlib.util
 import re
 
-# Load NLP model
-nlp = spacy.load("en_core_web_md")
+# ====== SpaCy Model Loader (Safe for Streamlit Cloud) ======
+model_name = "en_core_web_md"
+if importlib.util.find_spec(model_name) is None:
+    import spacy.cli
+    spacy.cli.download(model_name)
 
-# Streamlit Page Setup
+nlp = spacy.load(model_name)
+
+# ====== Streamlit Page Setup ======
 st.set_page_config(page_title="ATS Resume Score App", layout="wide")
 st.title("📊 ATS Resume Score Calculator with Insights")
 
-# ========== HELPERS ==========
+# ====== File Extraction Helpers ======
 
 def extract_text_from_pdf(file):
     doc = fitz.open(stream=file.read(), filetype="pdf")
@@ -36,7 +42,7 @@ def extract_text(file):
     else:
         return ""
 
-# New phrase-based extraction using spaCy noun_chunks and entities
+# ====== Phrase Extraction Using spaCy ======
 def get_phrases(text):
     doc = nlp(text)
     keywords = set()
@@ -48,6 +54,7 @@ def get_phrases(text):
         keywords.add(ent.text.strip().lower())
     return list(keywords)
 
+# ====== Similarity Calculation ======
 def calculate_similarity(jd_phrases, resume_text, threshold=0.6):
     resume_doc = nlp(resume_text)
     matched = []
@@ -61,7 +68,7 @@ def calculate_similarity(jd_phrases, resume_text, threshold=0.6):
             missing.append((phrase, round(sim, 2)))
     return matched, missing
 
-# ========== UI ==========
+# ====== Streamlit UI ======
 
 st.subheader("📄 Resume Input")
 resume_file = st.file_uploader("Upload Resume (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
