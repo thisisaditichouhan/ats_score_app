@@ -2,9 +2,8 @@ import streamlit as st
 import docx2txt
 import fitz  # PyMuPDF
 import spacy
+import spacy.cli
 import re
-import importlib
-import subprocess
 
 # ====== Streamlit Page Setup ======
 st.set_page_config(page_title="ATS Resume Score App", layout="wide")
@@ -58,6 +57,15 @@ def calculate_similarity(jd_phrases, resume_text, nlp, threshold=0.6):
             missing.append((phrase, round(sim, 2)))
     return matched, missing
 
+# ====== spaCy Model Loader ======
+def ensure_spacy_model(model_name="en_core_web_md"):
+    try:
+        spacy.cli.download(model_name)  # ✅ Download safely
+        return spacy.load(model_name)
+    except Exception as e:
+        st.error(f"Failed to load spaCy model '{model_name}'. Error: {e}")
+        return None
+
 # ====== Streamlit UI ======
 
 st.subheader("📄 Resume Input")
@@ -71,15 +79,10 @@ jd_text_input = st.text_area("Or paste JD text here:")
 if st.button("🔍 Analyze Resume"):
     with st.spinner("Analyzing resume, please wait..."):
 
-        # ✅ Model loader inside the button — safe for Streamlit Cloud
-        def ensure_spacy_model(model_name="en_core_web_md"):
-            try:
-                return importlib.import_module(model_name).load()
-            except ModuleNotFoundError:
-                subprocess.run(["python", "-m", "spacy", "download", model_name])
-                return importlib.import_module(model_name).load()
-
+        # ✅ Load spaCy model safely inside button
         nlp = ensure_spacy_model()
+        if not nlp:
+            st.stop()
 
         # Load resume
         resume_text = extract_text(resume_file) if resume_file else resume_text_input
