@@ -4,6 +4,9 @@ import fitz  # PyMuPDF
 import spacy
 import spacy.cli
 import re
+import importlib
+import subprocess
+
 
 # ✅ Robust spaCy model loader (for Streamlit Cloud)
 def ensure_spacy_model(model_name="en_core_web_md"):
