@@ -4,15 +4,21 @@ import streamlit as st
 import docx2txt
 import fitz  # PyMuPDF
 import spacy
-import spacy.cli
 import re
 
-# ====== Fix for Streamlit async + tokenizer noise ======
+# ====== Fix tokenizer/env issues for clean logs ======
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 try:
     asyncio.get_running_loop()
 except RuntimeError:
     asyncio.set_event_loop(asyncio.new_event_loop())
+
+# ====== Load spaCy model (already installed via requirements.txt) ======
+try:
+    nlp = spacy.load("en_core_web_sm")
+except Exception as e:
+    st.error("❌ Failed to load spaCy model 'en_core_web_sm'. Please check installation.")
+    st.stop()
 
 # ====== Streamlit Page Setup ======
 st.set_page_config(page_title="ATS Resume Score App", layout="wide")
@@ -41,7 +47,7 @@ def extract_text(file):
         return ""
 
 # ====== Phrase Extraction Using spaCy ======
-def get_phrases(text, nlp):
+def get_phrases(text):
     doc = nlp(text)
     keywords = set()
     for chunk in doc.noun_chunks:
@@ -53,7 +59,7 @@ def get_phrases(text, nlp):
     return list(keywords)
 
 # ====== Similarity Calculation ======
-def calculate_similarity(jd_phrases, resume_text, nlp, threshold=0.6):
+def calculate_similarity(jd_phrases, resume_text, threshold=0.6):
     resume_doc = nlp(resume_text)
     matched = []
     missing = []
@@ -65,15 +71,6 @@ def calculate_similarity(jd_phrases, resume_text, nlp, threshold=0.6):
         else:
             missing.append((phrase, round(sim, 2)))
     return matched, missing
-
-# ====== spaCy Model Loader ======
-def ensure_spacy_model(model_name="en_core_web_sm"):
-    try:
-        spacy.cli.download(model_name)
-        return spacy.load(model_name)
-    except Exception as e:
-        st.error(f"Failed to load spaCy model '{model_name}'. Error: {e}")
-        return None
 
 # ====== Streamlit UI ======
 
@@ -88,16 +85,12 @@ jd_text_input = st.text_area("Or paste JD text here:")
 if st.button("🔍 Analyze Resume"):
     with st.spinner("Analyzing resume, please wait..."):
 
-        nlp = ensure_spacy_model()
-        if not nlp:
-            st.stop()
-
         resume_text = extract_text(resume_file) if resume_file else resume_text_input
         jd_text = extract_text(jd_file) if jd_file else jd_text_input
 
         if resume_text.strip() and jd_text.strip():
-            jd_phrases = get_phrases(jd_text, nlp)
-            matched, missing = calculate_similarity(jd_phrases, resume_text, nlp)
+            jd_phrases = get_phrases(jd_text)
+            matched, missing = calculate_similarity(jd_phrases, resume_text)
 
             score = int((len(matched) / len(jd_phrases)) * 100) if jd_phrases else 0
 
