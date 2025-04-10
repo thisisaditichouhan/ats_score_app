@@ -58,7 +58,7 @@ def calculate_similarity(jd_phrases, resume_text, nlp, threshold=0.6):
     return matched, missing
 
 # ====== spaCy Model Loader ======
-def ensure_spacy_model(model_name="en_core_web_md"):
+def ensure_spacy_model(model_name="en_core_web_sm"):
     try:
         spacy.cli.download(model_name)  # ✅ Download safely
         return spacy.load(model_name)
