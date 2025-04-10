@@ -5,14 +5,15 @@ import spacy
 import spacy.cli
 import re
 
-try:
-    import en_core_web_md
-    nlp = en_core_web_md.load()
-except ImportError:
-    import spacy.cli
-    spacy.cli.download("en_core_web_md")
-    import en_core_web_md
-    nlp = en_core_web_md.load()
+# ✅ Robust spaCy model loader (for Streamlit Cloud)
+def ensure_spacy_model(model_name="en_core_web_md"):
+    try:
+        return importlib.import_module(model_name).load()
+    except ModuleNotFoundError:
+        subprocess.run(["python", "-m", "spacy", "download", model_name])
+        return importlib.import_module(model_name).load()
+
+nlp = ensure_spacy_model()
 
 
 # ====== Streamlit Page Setup ======
