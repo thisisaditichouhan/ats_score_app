@@ -2,4 +2,3 @@ streamlit
 docx2txt
 PyMuPDF
 spacy
-sentence-transformers
