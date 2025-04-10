@@ -1,9 +1,18 @@
+import os
+import asyncio
 import streamlit as st
 import docx2txt
 import fitz  # PyMuPDF
 import spacy
 import spacy.cli
 import re
+
+# ====== Fix for Streamlit async + tokenizer noise ======
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+try:
+    asyncio.get_running_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 # ====== Streamlit Page Setup ======
 st.set_page_config(page_title="ATS Resume Score App", layout="wide")
@@ -60,7 +69,7 @@ def calculate_similarity(jd_phrases, resume_text, nlp, threshold=0.6):
 # ====== spaCy Model Loader ======
 def ensure_spacy_model(model_name="en_core_web_sm"):
     try:
-        spacy.cli.download(model_name)  # ✅ Download safely
+        spacy.cli.download(model_name)
         return spacy.load(model_name)
     except Exception as e:
         st.error(f"Failed to load spaCy model '{model_name}'. Error: {e}")
@@ -79,14 +88,11 @@ jd_text_input = st.text_area("Or paste JD text here:")
 if st.button("🔍 Analyze Resume"):
     with st.spinner("Analyzing resume, please wait..."):
 
-        # ✅ Load spaCy model safely inside button
         nlp = ensure_spacy_model()
         if not nlp:
             st.stop()
 
-        # Load resume
         resume_text = extract_text(resume_file) if resume_file else resume_text_input
-        # Load JD
         jd_text = extract_text(jd_file) if jd_file else jd_text_input
 
         if resume_text.strip() and jd_text.strip():
@@ -95,7 +101,6 @@ if st.button("🔍 Analyze Resume"):
 
             score = int((len(matched) / len(jd_phrases)) * 100) if jd_phrases else 0
 
-            # ====== Results Display ======
             st.subheader("📈 ATS Match Score")
             st.progress(score)
             st.metric("Match Score", f"{score}/100")
