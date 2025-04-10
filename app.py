@@ -2,16 +2,12 @@ import streamlit as st
 import docx2txt
 import fitz  # PyMuPDF
 import spacy
-import importlib.util
+import spacy.cli
 import re
 
-# ====== SpaCy Model Loader (Safe for Streamlit Cloud) ======
-model_name = "en_core_web_md"
-if importlib.util.find_spec(model_name) is None:
-    import spacy.cli
-    spacy.cli.download(model_name)
-
-nlp = spacy.load(model_name)
+# ✅ Download & load model safely (Streamlit Cloud-friendly)
+spacy.cli.download("en_core_web_md")
+nlp = spacy.load("en_core_web_md")
 
 # ====== Streamlit Page Setup ======
 st.set_page_config(page_title="ATS Resume Score App", layout="wide")
