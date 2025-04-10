@@ -60,16 +60,20 @@ def get_phrases(text):
 
 # ====== Similarity Calculation ======
 def calculate_similarity(jd_phrases, resume_text, threshold=0.6):
-    resume_doc = nlp(resume_text)
+    resume_phrases = get_phrases(resume_text)
     matched = []
     missing = []
+
     for phrase in jd_phrases:
         phrase_doc = nlp(phrase)
-        sim = phrase_doc.similarity(resume_doc)
-        if sim >= threshold:
-            matched.append((phrase, round(sim, 2)))
+        similarities = [phrase_doc.similarity(nlp(rp)) for rp in resume_phrases]
+        max_sim = max(similarities) if similarities else 0
+
+        if max_sim >= threshold:
+            matched.append((phrase, round(max_sim, 2)))
         else:
-            missing.append((phrase, round(sim, 2)))
+            missing.append((phrase, round(max_sim, 2)))
+
     return matched, missing
 
 # ====== Streamlit UI ======
