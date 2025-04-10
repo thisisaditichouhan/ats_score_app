@@ -1,4 +1,4 @@
-# 🧠 ATS Resume Score Checker
+# ATS Resume Score Checker
 
 A simple web app to compare your resume with a job description.  
 📎 Upload your resume and paste the JD — get a match score out of 100.  
