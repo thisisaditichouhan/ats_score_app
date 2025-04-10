@@ -2,22 +2,9 @@ import streamlit as st
 import docx2txt
 import fitz  # PyMuPDF
 import spacy
-import spacy.cli
 import re
 import importlib
 import subprocess
-
-
-# ✅ Robust spaCy model loader (for Streamlit Cloud)
-def ensure_spacy_model(model_name="en_core_web_md"):
-    try:
-        return importlib.import_module(model_name).load()
-    except ModuleNotFoundError:
-        subprocess.run(["python", "-m", "spacy", "download", model_name])
-        return importlib.import_module(model_name).load()
-
-nlp = ensure_spacy_model()
-
 
 # ====== Streamlit Page Setup ======
 st.set_page_config(page_title="ATS Resume Score App", layout="wide")
@@ -27,10 +14,7 @@ st.title("📊 ATS Resume Score Calculator with Insights")
 
 def extract_text_from_pdf(file):
     doc = fitz.open(stream=file.read(), filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
+    return "".join([page.get_text() for page in doc])
 
 def extract_text_from_docx(file):
     return docx2txt.process(file)
@@ -49,7 +33,7 @@ def extract_text(file):
         return ""
 
 # ====== Phrase Extraction Using spaCy ======
-def get_phrases(text):
+def get_phrases(text, nlp):
     doc = nlp(text)
     keywords = set()
     for chunk in doc.noun_chunks:
@@ -61,7 +45,7 @@ def get_phrases(text):
     return list(keywords)
 
 # ====== Similarity Calculation ======
-def calculate_similarity(jd_phrases, resume_text, threshold=0.6):
+def calculate_similarity(jd_phrases, resume_text, nlp, threshold=0.6):
     resume_doc = nlp(resume_text)
     matched = []
     missing = []
@@ -86,27 +70,29 @@ jd_text_input = st.text_area("Or paste JD text here:")
 
 if st.button("🔍 Analyze Resume"):
     with st.spinner("Analyzing resume, please wait..."):
-        # Load resume
-        resume_text = ""
-        if resume_file:
-            resume_text = extract_text(resume_file)
-        elif resume_text_input:
-            resume_text = resume_text_input
 
+        # ✅ Model loader inside the button — safe for Streamlit Cloud
+        def ensure_spacy_model(model_name="en_core_web_md"):
+            try:
+                return importlib.import_module(model_name).load()
+            except ModuleNotFoundError:
+                subprocess.run(["python", "-m", "spacy", "download", model_name])
+                return importlib.import_module(model_name).load()
+
+        nlp = ensure_spacy_model()
+
+        # Load resume
+        resume_text = extract_text(resume_file) if resume_file else resume_text_input
         # Load JD
-        jd_text = ""
-        if jd_file:
-            jd_text = extract_text(jd_file)
-        elif jd_text_input:
-            jd_text = jd_text_input
+        jd_text = extract_text(jd_file) if jd_file else jd_text_input
 
         if resume_text.strip() and jd_text.strip():
-            jd_phrases = get_phrases(jd_text)
-            matched, missing = calculate_similarity(jd_phrases, resume_text)
+            jd_phrases = get_phrases(jd_text, nlp)
+            matched, missing = calculate_similarity(jd_phrases, resume_text, nlp)
 
             score = int((len(matched) / len(jd_phrases)) * 100) if jd_phrases else 0
 
-            # Result Section
+            # ====== Results Display ======
             st.subheader("📈 ATS Match Score")
             st.progress(score)
             st.metric("Match Score", f"{score}/100")
