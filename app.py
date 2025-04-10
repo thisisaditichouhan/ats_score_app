@@ -5,9 +5,15 @@ import spacy
 import spacy.cli
 import re
 
-# ✅ Download & load model safely (Streamlit Cloud-friendly)
-spacy.cli.download("en_core_web_md")
-nlp = spacy.load("en_core_web_md")
+try:
+    import en_core_web_md
+    nlp = en_core_web_md.load()
+except ImportError:
+    import spacy.cli
+    spacy.cli.download("en_core_web_md")
+    import en_core_web_md
+    nlp = en_core_web_md.load()
+
 
 # ====== Streamlit Page Setup ======
 st.set_page_config(page_title="ATS Resume Score App", layout="wide")
