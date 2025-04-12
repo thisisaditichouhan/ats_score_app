@@ -293,7 +293,7 @@ def contains_white_font_docx(file):
     for para in document.paragraphs:
         for run in para.runs:
             font_color = run.font.color
-            if font_color and font_color.rgp == RGBColor(255,255,255):
+            if font_color and font_color.rgb == RGBColor(255,255,255):
                 return True
 
     return False
