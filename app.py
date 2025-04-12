@@ -527,10 +527,10 @@ if st.button("🔍 Analyze Resume"):
             resume_file.seek(0)
 
             if ext == ".docx" and contains_white_font_docx(resume_file):
-                st.error("⚠️ White font detected in DOCX. Resume rejected.")
+                st.error("⚠️ RESUME REJECTED ⚠️ Suspicious formatting detected: white font in the DOCX file.")
                 st.stop()
             elif ext == ".pdf" and contains_white_font_pdf(resume_file):
-                st.error("⚠️ White font detected in PDF. Resume rejected.")
+                st.error("⚠️ RESUME REJECTED ⚠️ Suspicious formatting detected: white font in PDF the file.")
                 st.stop()
 
             resume_file.seek(0)
