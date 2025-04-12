@@ -234,6 +234,7 @@
 #                 st.success("Excellent! Your resume is highly aligned with the job description.")
 #         else:
 #             st.warning("Please provide both Resume and JD (upload or paste).")
+#-------------------
 import sys
 import os
 import asyncio
@@ -287,19 +288,23 @@ def extract_text(file):
     
 # ===== Integrity check =====
 
-#white check in word doc
+# white check in word doc
 def contains_white_font_docx(file):
     document = Document(file)
     for para in document.paragraphs:
         for run in para.runs:
             font_color = run.font.color
-            if font_color and font_color.rgb == RGBColor(255,255,255):
+            # Check if the font color is explicitly white (255, 255, 255)
+            if font_color and font_color.rgb == RGBColor(255, 255, 255):
                 return True
-
+            # Additionally, check if the font color is None (which means it's default or black color)
+            elif font_color is None:
+                continue
     return False
 
 # ==== White check in .pdf =====
 def is_white(color, tolerance=0.05):
+    # Assuming color is a tuple (R, G, B)
     return all(abs(c - 1.0) <= tolerance for c in color)
 
 def contains_white_font_pdf(file):
@@ -308,10 +313,16 @@ def contains_white_font_pdf(file):
     for page in doc:
         blocks = page.get_text("dict")["blocks"]
         for block in blocks:
-            for line in block.get("lines",[]):
-                for span in line.get("spans",[]):
-                    color_rgb = fitz.utils.get_color(span.get("color",0))
-                    if is_white(color_rgb):
+            for line in block.get("lines", []):
+                for span in line.get("spans", []):
+                    # Get the color as an integer and convert it to RGB
+                    color = span.get("color", 0)
+                    # Extract the RGB values (PyMuPDF stores colors as 24-bit integers)
+                    r = ((color >> 16) & 0xFF) / 255.0
+                    g = ((color >> 8) & 0xFF) / 255.0
+                    b = (color & 0xFF) / 255.0
+                    # Check if the color is close to white (255, 255, 255)
+                    if is_white((r, g, b)):
                         return True
     return False
 
@@ -358,7 +369,7 @@ jd_text_input = st.text_area("Or paste JD text here:")
 if st.button("🔍 Analyze Resume"):
     with st.spinner("Analyzing resume, please wait..."):
 
-        #anti-cheat: check for white font before processing
+        # anti-cheat: check for white font before processing
         if resume_file:
             if resume_file.name.endswith(".docx") and contains_white_font_docx(resume_file):
                 st.error("⚠️ Suspicious formatting detected: white font in Word file. Resume rejected.")
