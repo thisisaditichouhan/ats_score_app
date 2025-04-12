@@ -234,7 +234,7 @@
 #                 st.success("Excellent! Your resume is highly aligned with the job description.")
 #         else:
 #             st.warning("Please provide both Resume and JD (upload or paste).")
-#-------------------
+#-------------------v2 below ---- added integrity check 1 for white font --------------------#
 import sys
 import os
 import asyncio
